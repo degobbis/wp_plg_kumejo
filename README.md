@@ -1,0 +1,1 @@
+# wp_plg_kumejo
