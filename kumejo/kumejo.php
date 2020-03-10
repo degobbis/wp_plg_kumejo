@@ -40,43 +40,78 @@ function kumejo() {
 	$url .= '&limiter=4';
 	$url = htmlspecialchars( $url, ENT_COMPAT, 'UTF-8' );
 
-	$scriptPath = plugins_url('js/iframeResizer.min.js', __FILE__);
+	$scriptPath = plugins_url( 'js/iframeResizer.min.js', __FILE__ );
 	?>
 	<script src="<?php echo $scriptPath; ?>" async></script>
 
 	<style>
+		div#kumejo-serp {
+			position: relative;
+			box-sizing: border-box;
+		}
+		.kumejo-loading {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			color: black;
+			background-color: white;
+			z-index: 2;
+			text-align: center;
+			font-size: 24px;
+			height: 100%;
+			width: 100%;
+			opacity: 0.5;
+		}
 		iframe#kumejo-serp-<?php echo $id; ?> {
 			width: 1px;
 			min-width: 100%;
 		}
 	</style>
-	<iframe id="kumejo-serp-<?php echo $id; ?>"
-			allowfullscreen
-			class="kumejo-serp"
-			src="<?php echo $url; ?>"
-			width="100%"
-			scrolling="auto"
-			frameborder="0"
-	>
-	</iframe>
+	<div id="kumejo-serp">
+		<iframe id="kumejo-serp-<?php echo $id; ?>"
+				allowfullscreen
+				class="kumejo-serp"
+				src="<?php echo $url; ?>"
+				width="100%"
+				scrolling="auto"
+				frameborder="0"
+		>
+		</iframe>
+		<span class="kumejo-loading">L o a d i n g . . .</span>
+	</div>
 	<script type="text/javascript">
 
 		function kumejoWPloadReady(fn) {
-			if (document.readyState != 'loading'){
+			if (document.readyState != 'loading') {
 				fn();
 			} else if (document.addEventListener) {
 				document.addEventListener('DOMContentLoaded', fn);
 			} else {
-				document.attachEvent('onreadystatechange', function() {
+				document.attachEvent('onreadystatechange', function () {
 					if (document.readyState != 'loading')
 						fn();
 				});
 			}
 		}
 
-		function kumejoInit()
-		{
-			iFrameResize({log: false}, '#kumejo-serp-<?php echo $id; ?>')
+		function kumejoInit() {
+			var test = iFrameResize({log: false}, '#kumejo-serp-<?php echo $id; ?>');
+			var el = document.querySelector('span.kumejo-loading');
+			//console.log(test);
+			//console.log('test !== undefined', typeof test !== undefined);
+			//console.log('test.length > 0', test.length > 0);
+			if (el !== undefined) {
+				if (typeof test !== undefined && test.length > 0) {
+					setTimeout(function () {
+						el.parentNode.removeChild(el);
+					}, 2000);
+				}
+				else {
+					el.textContent = 'E R R O R';
+				}
+			}
 		}
 
 		kumejoWPloadReady(kumejoInit);
