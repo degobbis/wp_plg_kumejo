@@ -3,7 +3,7 @@
  * Plugin Name: Kumejo SERP
  * Plugin URI: https://www.kunze-medien.de
  * Description: This Plugin implements kumejo.de SERP in an iFrame.
- * Version: 1.0
+ * Version: 1.0-rc1
  * Author: Guido De Gobbis
  * Author URI: http://www.kunze-medien.de
  * License: GPLv3
@@ -26,97 +26,234 @@
  */
 
 // Exit if accessed directly
-if ( ! defined( 'WPINC' ) ) {
+if (!defined('WPINC'))
+{
 	die;
 }
 
-function kumejo() {
-	$id  = '941';
-	$url = 'http://localhost/kumejo/jobsuche.html';
-	$url .= '?tmpl=component';
-	$url .= '#attr.author.value=' . $id;
-	$url .= '&sort=name';
-	$url .= '&sortdir=desc';
-	$url .= '&limiter=4';
-	$url = htmlspecialchars( $url, ENT_COMPAT, 'UTF-8' );
+/**
+ * Define if output is set
+ *
+ * @param bool $isset
+ *
+ * @return   bool
+ */
+function kumejo_isset($isset = false)
+{
+	static $return;
 
-	$scriptPath = plugins_url( 'js/iframeResizer.min.js', __FILE__ );
+	if (null === $return)
+	{
+		$return = false;
+	}
+
+	if (true === $isset)
+	{
+
+		$return = true;
+	}
+
+	return $return;
+}
+
+/**
+ * Add js and css
+ */
+function kumejo_add_css_js()
+{
+	if (is_admin() || kumejo_isset())
+	{
+		return;
+	}
 	?>
-	<script src="<?php echo $scriptPath; ?>" async></script>
-
-	<style>
-		div#kumejo-serp {
-			position: relative;
-			box-sizing: border-box;
-		}
-		.kumejo-loading {
-			position: absolute;
-			top: 0;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			color: black;
-			background-color: white;
-			z-index: 2;
-			text-align: center;
-			font-size: 24px;
-			height: 100%;
-			width: 100%;
-			opacity: 0.5;
-		}
-		iframe#kumejo-serp-<?php echo $id; ?> {
-			width: 1px;
-			min-width: 100%;
-		}
-	</style>
-	<div id="kumejo-serp">
-		<iframe id="kumejo-serp-<?php echo $id; ?>"
-				allowfullscreen
-				class="kumejo-serp"
-				src="<?php echo $url; ?>"
-				width="100%"
-				scrolling="auto"
-				frameborder="0"
-		>
-		</iframe>
-		<span class="kumejo-loading">L o a d i n g . . .</span>
-	</div>
-	<script type="text/javascript">
-
-		function kumejoWPloadReady(fn) {
-			if (document.readyState != 'loading') {
-				fn();
-			} else if (document.addEventListener) {
-				document.addEventListener('DOMContentLoaded', fn);
-			} else {
-				document.attachEvent('onreadystatechange', function () {
-					if (document.readyState != 'loading')
-						fn();
-				});
-			}
-		}
-
-		function kumejoInit() {
-			var test = iFrameResize({log: false}, '#kumejo-serp-<?php echo $id; ?>');
-			var el = document.querySelector('span.kumejo-loading');
-			//console.log(test);
-			//console.log('test !== undefined', typeof test !== undefined);
-			//console.log('test.length > 0', test.length > 0);
-			if (el !== undefined) {
-				if (typeof test !== undefined && test.length > 0) {
-					setTimeout(function () {
-						el.parentNode.removeChild(el);
-					}, 2000);
-				}
-				else {
-					el.textContent = 'E R R O R';
-				}
-			}
-		}
-
-		kumejoWPloadReady(kumejoInit);
-	</script>
+	<script type="text/javascript" src="<?php echo plugins_url('js/iframeResizer.min.js', __FILE__); ?>"></script>
+	<link rel="stylesheet" type="text/css" media="all" href="<?php echo plugins_url('css/kumejo.css', __FILE__); ?>">
 	<?php
 }
 
-add_shortcode( 'kumejo', 'kumejo' );
+add_action('wp_head', 'kumejo_add_css_js');
+
+/**
+ * Include fields
+ */
+include_once dirname(__FILE__) . '/fields/fields.inc.php';
+
+/**
+ * Register uninstall hooks.
+ */
+if (!function_exists('kumejo_options_validate'))
+{
+	function kumejo_uninstall_hook()
+	{
+		if (is_multisite())
+		{
+			return;
+		}
+
+		delete_option('kumejo_settings');
+	}
+}
+register_uninstall_hook(__FILE__, 'kumejo_uninstall_hook');
+
+/**
+ * Add menu item for admin page
+ */
+if (!function_exists('kumejo_add_admin_page'))
+{
+	function kumejo_add_admin_page()
+	{
+		add_menu_page(__('KuMeJo', 'kumejo'), __('KuMeJo'), 'manage_options', 'kumejo', 'kumejo_admin_page');
+	}
+}
+add_action('admin_menu', 'kumejo_add_admin_page');
+
+/**
+ * Admin Page
+ */
+if (!function_exists('kumejo_admin_page'))
+{
+	function kumejo_admin_page()
+	{
+		$error   = array();
+		$options = get_option('kumejo_options');
+
+		if (empty($options['remote']))
+		{
+			$error[] = __('Die URL zum Abholen der Jobs darf nicht leer sein!');
+		}
+
+		if (empty($options['id']))
+		{
+			$error[] = __('Die Benutzer-ID darf nicht leer sein!');
+		}
+
+		if (!empty($error))
+		{
+			add_settings_error('kumejo', 'kumejo', implode('<br />', $error));
+		}
+
+		ob_start(); ?>
+		<div class="wrap">
+			<h2><?php echo esc_html(get_admin_page_title()); ?></h2>
+			<?php settings_errors(); ?>
+			<form id="my-admin-form" method="post" action="options.php">
+				<?php
+				settings_fields('kumejo-settings');
+				do_settings_sections('kumejo');
+				submit_button();
+				?>
+			</form>
+		</div>
+		<?php
+		ob_end_flush();
+	}
+}
+
+if (!function_exists('kumejo_shortcode_replace'))
+{
+	function kumejo_shortcode_replace()
+	{
+		$postType = get_post()->post_type;
+
+		if (is_admin() || kumejo_isset() || $postType == 'post')
+		{
+			return;
+		}
+
+		$error     = false;
+		$options   = get_option('kumejo_options');
+
+		if (empty($options['remote']))
+		{
+			$error = true;
+		}
+
+		if (empty($options['id']))
+		{
+			$error = true;
+		}
+
+		if ($error)
+		{
+			return;
+		}
+
+		$id  = $options['id'];
+		$url = $options['remote'];
+		$url .= '?tmpl=component';
+		$url .= '#attr.author.value=' . $id;
+		$url .= '&sort=' . $options['sort'];
+		$url .= '&sortdir=' . $options['sortdir'];
+		$url .= '&limiter=' . $options['limiter'];
+		$url = htmlspecialchars($url, ENT_COMPAT, 'UTF-8');
+
+		/**
+		 * Add dynamic css
+		 */
+		wp_register_style('kumejo', false);
+		wp_enqueue_style('kumejo');
+		wp_add_inline_style('kumejo',
+			'iframe#kumejo-serp-' . $id . '{width: 1px;min-width: 100%;}'
+		);
+
+		/**
+		 * Add dynamic js
+		 */
+		wp_register_script('kumejo', false);
+		wp_enqueue_script('kumejo');
+		wp_add_inline_script('kumejo', "
+			function kumejoWPloadReady(fn) {
+				if (document.readyState != 'loading') {
+					fn();
+				} else if (document.addEventListener) {
+					document.addEventListener('DOMContentLoaded', fn);
+				} else {
+					document.attachEvent('onreadystatechange', function () {
+						if (document.readyState != 'loading')
+							fn();
+					});
+				}
+			}
+
+			function kumejoInit() {
+				var test = iFrameResize({log: false}, '#kumejo-serp-" . $id . "');
+				var el = document.querySelector('span.kumejo-loading');
+				//console.log(test);
+				//console.log('test !== undefined', typeof test !== undefined);
+				//console.log('test.length > 0', test.length > 0);
+				if (el !== undefined) {
+					if (typeof test !== undefined && test.length > 0) {
+						setTimeout(function () {
+							el.parentNode.removeChild(el);
+						}, 2000);
+					} else {
+						el.textContent = 'E R R O R';
+					}
+				}
+			}
+
+			kumejoWPloadReady(kumejoInit);
+		");
+
+		ob_start();
+		?>
+		<div id="kumejo-serp">
+			<iframe id="kumejo-serp-<?php echo $id; ?>"
+					allowfullscreen
+					class="kumejo-serp"
+					src="<?php echo $url; ?>"
+					width="100%"
+					scrolling="auto"
+					frameborder="0"
+			>
+			</iframe>
+			<span class="kumejo-loading">L o a d i n g . . .</span>
+		</div>
+		<?php
+		$return = ob_get_contents();
+		ob_end_clean();
+
+		return $return;
+	}
+}
+add_shortcode('kumejo', 'kumejo_shortcode_replace');
