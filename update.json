@@ -1,0 +1,21 @@
+{
+  "name": "Kumejo SERP",
+  "author": "Kunze Medien AG",
+  "author_link": "https:\/\/kunze-medien.de",
+  "version": "1.0-rc1",
+  "download_url": "https:\/\/github.com\/degobbis\/wp_plg_kumejo\/releases\/download\/1.0-rc1\/kumejo.zip",
+  "requires": "5.3",
+  "tested": "5.4",
+  "requires_php": "5.6",
+  "last_updated": "2020-04-20 09:00:00",
+  "sections": {
+	"description": "",
+	"installation": "",
+	"changelog": ""
+  },
+  "banners": {
+	"low": "https:\/\/raw.githubusercontent.com\/degobbis\/wp_plg_kumejo\/master\/images\/KuMeJo_772x250.jpg",
+	"high": "https:\/\/raw.githubusercontent.com\/degobbis\/wp_plg_kumejo\/master\/images\/KuMeJo_1544x500.jpg"
+  },
+  "screenshots": ""
+}

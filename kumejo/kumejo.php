@@ -1,10 +1,10 @@
 <?php
 /*
  * Plugin Name: Kumejo SERP
- * Plugin URI: https://www.kunze-medien.de
- * Description: This Plugin implements kumejo.de SERP in an iFrame.
+ * Plugin URI: https://github.com/degobbis/wp_plg_kumejo
+ * Description: This Plugin implements kumejo.de SERP as an iFrame.
  * Version: 1.0-rc1
- * Author: Guido De Gobbis
+ * Author: Guido De Gobbis - Kunze Medien AG
  * Author URI: http://www.kunze-medien.de
  * License: GPLv3
  * Text Domain: kumejo
@@ -30,6 +30,11 @@ if (!defined('WPINC'))
 {
 	die;
 }
+
+/**
+ * Include update logic
+ */
+include dirname(__FILE__) . '/update.php';
 
 /**
  * Define if output is set
